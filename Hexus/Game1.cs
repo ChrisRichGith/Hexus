@@ -23,9 +23,9 @@ public class Game1 : Game
     private MouseState _previousMouseState;
     private float _aiTurnTimer;
 
-    private const int GridWidth = 10;
-    private const int GridHeight = 10;
-    private const float HexSize = 30f;
+    private const int GridWidth = 12;
+    private const int GridHeight = 12;
+    private const float HexSize = 40f;
 
     public Game1()
     {
@@ -36,8 +36,8 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        _graphics.PreferredBackBufferWidth = 800;
-        _graphics.PreferredBackBufferHeight = 600;
+        _graphics.PreferredBackBufferWidth = 1000;
+        _graphics.PreferredBackBufferHeight = 1000;
         _graphics.ApplyChanges();
 
         _gridManager = new GridManager(GridWidth, GridHeight, HexSize);
@@ -45,9 +45,13 @@ public class Game1 : Game
         _gridManager.AddInitialTiles();
         _gameState = new GameState();
 
-        var gridPixelWidth = GridWidth * HexSize * MathF.Sqrt(3);
-        var gridPixelHeight = GridHeight * HexSize * 1.5f;
-        _gridScreenOffset = new Vector2((_graphics.PreferredBackBufferWidth - gridPixelWidth) / 3, (_graphics.PreferredBackBufferHeight - gridPixelHeight) / 2);
+        // This is a rough estimation for centering, might need fine-tuning
+        var gridRenderWidth = (GridWidth * HexSize * MathF.Sqrt(3)) * 0.866f;
+        var gridRenderHeight = (GridHeight * HexSize * 1.5f) * 0.8f; // Adjusted for isometric view and overlap
+        _gridScreenOffset = new Vector2(
+            (_graphics.PreferredBackBufferWidth - gridRenderWidth) / 2f,
+            (_graphics.PreferredBackBufferHeight - gridRenderHeight) / 2f
+        );
 
         base.Initialize();
     }
@@ -214,10 +218,80 @@ public class Game1 : Game
     }
 
     #region Coordinate Conversion and Drawing
-    private Vector2 HexToPixel(Hex hex) { /* ... */ return new Vector2(HexSize*(MathF.Sqrt(3)*hex.Q+MathF.Sqrt(3)/2f*hex.R), HexSize*(3f/2f*hex.R)); }
-    private Vector2 GetIsoPixel(Hex hex) { var p=HexToPixel(hex); return new Vector2((p.X-p.Y)*0.866f, (p.X+p.Y)*0.5f) + _gridScreenOffset; }
-    private Hex PixelToHex(Vector2 p) { var ip=p-_gridScreenOffset; var cX=(ip.X/0.866f+ip.Y/0.5f)/2; var cY=(ip.Y/0.5f-ip.X/0.866f)/2; var qf=(MathF.Sqrt(3)/3f*cX-1f/3f*cY)/HexSize; var rf=(2f/3f*cY)/HexSize; return HexRound(qf,rf); }
-    private Hex HexRound(float q_f,float r_f){var s_f=-q_f-r_f;var q=MathF.Round(q_f);var r=MathF.Round(r_f);var s=MathF.Round(s_f);var qd=MathF.Abs(q-q_f);var rd=MathF.Abs(r-r_f);var sd=MathF.Abs(s-s_f);if(qd>rd&&qd>sd)q=-r-s;else if(rd>sd)r=-q-s;return new Hex((int)q,(int)r);}
+
+    /// <summary>
+    /// Converts axial hex coordinates to pixel coordinates (pointy-topped).
+    /// </summary>
+    private Vector2 HexToPixel(Hex hex)
+    {
+        var x = HexSize * (MathF.Sqrt(3) * hex.Q + MathF.Sqrt(3) / 2f * hex.R);
+        var y = HexSize * (3f / 2f * hex.R);
+        return new Vector2(x, y);
+    }
+
+    /// <summary>
+    /// Converts pixel coordinates to an isometric representation and applies the screen offset.
+    /// </summary>
+    private Vector2 GetIsoPixel(Hex hex)
+    {
+        var cartesian = HexToPixel(hex);
+        // Standard isometric projection
+        var isoX = (cartesian.X - cartesian.Y) * 0.866f; // 0.866 is approx. cos(30)
+        var isoY = (cartesian.X + cartesian.Y) * 0.5f;   // 0.5 is sin(30)
+        return new Vector2(isoX, isoY) + _gridScreenOffset;
+    }
+
+    /// <summary>
+    /// Converts a pixel on the screen to the corresponding hex, including reversing the isometric projection.
+    /// </summary>
+    private Hex PixelToHex(Vector2 pixel)
+    {
+        // Remove the screen offset
+        var isoPixel = pixel - _gridScreenOffset;
+
+        // Reverse the isometric projection
+        var cartesianX = (isoPixel.X / 0.866f + isoPixel.Y / 0.5f) / 2;
+        var cartesianY = (isoPixel.Y / 0.5f - isoPixel.X / 0.866f) / 2;
+
+        // Convert cartesian coordinates to fractional hex coordinates
+        var q_f = (MathF.Sqrt(3) / 3f * cartesianX - 1f / 3f * cartesianY) / HexSize;
+        var r_f = (2f / 3f * cartesianY) / HexSize;
+
+        return HexRound(q_f, r_f);
+    }
+
+    /// <summary>
+    /// Rounds fractional hex coordinates to the nearest integer hex coordinates.
+    /// </summary>
+    private Hex HexRound(float q_f, float r_f)
+    {
+        // Calculate the third cube coordinate
+        var s_f = -q_f - r_f;
+
+        // Round to nearest integer
+        var q = MathF.Round(q_f);
+        var r = MathF.Round(r_f);
+        var s = MathF.Round(s_f);
+
+        // Calculate the differences from the original fractional values
+        var q_diff = MathF.Abs(q - q_f);
+        var r_diff = MathF.Abs(r - r_f);
+        var s_diff = MathF.Abs(s - s_f);
+
+        // Correct the rounding to maintain the q + r + s = 0 constraint
+        if (q_diff > r_diff && q_diff > s_diff)
+        {
+            q = -r - s;
+        }
+        else if (r_diff > s_diff)
+        {
+            r = -q - s;
+        }
+        // No need for an else, s is implicitly correct if q and r are
+
+        return new Hex((int)q, (int)r);
+    }
+
     #endregion
 
     protected override void Draw(GameTime gameTime)
