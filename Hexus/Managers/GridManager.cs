@@ -29,11 +29,13 @@ namespace Hexus.Managers
             Tiles.Clear();
             ControlPoints.Clear();
 
-            for (int r = 0; r < GridHeight; r++)
+            // Create a rectangular grid using offset coordinates, which are then converted to axial (Hex)
+            for (int row = 0; row < GridHeight; row++)
             {
-                for (int q = 0; q < GridWidth - (r / 2); q++)
+                var offset = row / 2; // This creates the offset for every second row
+                for (int col = 0; col < GridWidth; col++)
                 {
-                    AllHexes.Add(new Hex(q, r));
+                    AllHexes.Add(new Hex(col - offset, row));
                 }
             }
 

@@ -23,8 +23,8 @@ public class Game1 : Game
     private MouseState _previousMouseState;
     private float _aiTurnTimer;
 
-    private const int GridWidth = 12;
-    private const int GridHeight = 12;
+    private const int GridWidth = 11;
+    private const int GridHeight = 10;
     private const float HexSize = 40f;
 
     public Game1()
