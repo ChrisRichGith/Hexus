@@ -45,12 +45,12 @@ public class Game1 : Game
         _gridManager.AddInitialTiles();
         _gameState = new GameState();
 
-        // This is a rough estimation for centering, might need fine-tuning
-        var gridRenderWidth = (GridWidth * HexSize * MathF.Sqrt(3)) * 0.866f;
-        var gridRenderHeight = (GridHeight * HexSize * 1.5f) * 0.8f; // Adjusted for isometric view and overlap
+        // Centering for the flat, top-down grid
+        var gridPixelWidth = HexSize * MathF.Sqrt(3) * (GridWidth + 0.5f);
+        var gridPixelHeight = HexSize * (1.5f * GridHeight + 0.5f);
         _gridScreenOffset = new Vector2(
-            (_graphics.PreferredBackBufferWidth - gridRenderWidth) / 2f,
-            (_graphics.PreferredBackBufferHeight - gridRenderHeight) / 2f
+            (_graphics.PreferredBackBufferWidth - gridPixelWidth) / 2f,
+            (_graphics.PreferredBackBufferHeight - gridPixelHeight) / 2f
         );
 
         base.Initialize();
@@ -235,10 +235,11 @@ public class Game1 : Game
     private Vector2 GetIsoPixel(Hex hex)
     {
         var cartesian = HexToPixel(hex);
-        // Standard isometric projection
-        var isoX = (cartesian.X - cartesian.Y) * 0.866f; // 0.866 is approx. cos(30)
-        var isoY = (cartesian.X + cartesian.Y) * 0.5f;   // 0.5 is sin(30)
-        return new Vector2(isoX, isoY) + _gridScreenOffset;
+        // DIAGNOSTIC: Temporarily disabled isometric projection to show the flat grid.
+        // var isoX = (cartesian.X - cartesian.Y) * 0.866f; // 0.866 is approx. cos(30)
+        // var isoY = (cartesian.X + cartesian.Y) * 0.5f;   // 0.5 is sin(30)
+        // return new Vector2(isoX, isoY) + _gridScreenOffset;
+        return cartesian + _gridScreenOffset;
     }
 
     /// <summary>
