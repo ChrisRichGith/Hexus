@@ -39,7 +39,8 @@ namespace Hexus.Utils
             Vector2[] corners = new Vector2[6];
             for (int i = 0; i < 6; i++)
             {
-                float angle = MathHelper.ToRadians(60 * i); // Pointy top
+                // Add 30 degrees (0.523599 radians) to rotate from flat-topped to pointy-topped
+                float angle = MathHelper.ToRadians(60 * i + 30);
                 corners[i] = new Vector2(
                     center.X + size * (float)Math.Cos(angle),
                     center.Y + size * (float)Math.Sin(angle)
